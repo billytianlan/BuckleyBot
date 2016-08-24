@@ -6,6 +6,7 @@ let parseStringAsync = Promise.promisify(parseString);
 
 let jobScrape = new CronJob({
   cronTime: '00 00 * * * *',
+  // cronTime: '50 * * * * *',
   onTick: () => {
     console.log('Running jobScrape Cron Task');
     getJobsFromStackOverflow();
@@ -15,7 +16,7 @@ let jobScrape = new CronJob({
   timeZone: 'America/Los_Angeles'
 });
 
-const tags = ['javascript', 'react', 'node.js', 'node', 'angular', 'es6', 'backbone'];
+const tags = ['javascript', 'react.js', 'node.js', 'angular', 'es6', 'backbone'];
 
 const getJobsFromStackOverflow = () => {
   // make a request to Stack Overflow for jobs data

@@ -1,6 +1,6 @@
-import { connection } from '../bot.js';
+import { connection } from './main';
 import _ from 'underscore';
-import helper from '../bots/helper';
+import helper from './helper';
 
 let userJobsListener = {
   replyWithJobs: function(bot, message) {
@@ -51,6 +51,12 @@ let userJobsListener = {
 
     let sample = _.sample(attachments, numberOfJobs);
     return sample;
+  },
+  replyWithUserTagJobs: (bot, message) => {
+    helper.listAllUserRelatedJobs(message)
+    .then((user) => {
+      helper.getRelevantJobs(user);
+    })
   }
 };
 

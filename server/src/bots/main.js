@@ -1,8 +1,7 @@
 import Botkit from 'botkit';
-import userJobsListener from './bots/job';
-import helper from './bots/helper';
+import userJobsListener from './job';
+import helper from './helper';
 import rp from 'request-promise';
-import _ from 'underscore';
 
 const store = {};
 const server = 'http://localhost:8080';
@@ -43,14 +42,17 @@ const teams = () => {
   });
 };
 
-const addTeamBot = (createdTeam) => {
-  spawnBot(createdTeam);
-};
-
 //Adding key words bot responds to (hears) and event listeners (on)
 //Handle different bot listeners
 connection.hears(["jobs", "job"], ['direct_message'], function(bot, message) {
-  userJobsListener.replyWithJobs(bot, message);
+  //if there is only one word in the message
+  if (message.text.length === 1) {
+    //Change this to return the jobs associated with the user tags
+    userJobsListener.replyWithJobs(bot, message);
+  } else {
+    userJobsListener.replyWithJobs(bot, message);
+  }
+  
 });
 
 connection.hears(["change", "update"], ['direct_message'], function(bot, message) {
@@ -69,72 +71,8 @@ const askLocation = (response, convo) => {
 }
 
 connection.hears(["tag", "filter"], ['direct_message'], (bot, message) => {
-  respondWithTags(bot, message);
+  helper.respondWithTags(bot, message);
 });
-
-const respondWithTags = (bot, message) => {
-  //find all tags
-  helper.listAllTags()
-  .then(allTags => {
-    //find all user tags
-    helper.listUserTags(message)
-    .then(res => {
-      //all user tags
-      let userTagArr = _.map(res, item => {
-        return item.tagId;
-      });
-      let attachments = [];
-
-      //how can i loop through the user tags
-      //if the user has the tag, have a delete button
-      //otherwise, have a button to add
-
-      allTags.forEach(({id, name}) => {
-        let addButton =  {
-          name: `addTag`,
-          text: `Add Tag`,
-          value: id,
-          type: `button`,
-          style: `primary`
-        }; 
-        let deleteButton = {
-          name: `deleteTag`, 
-          text: `Delete Tag`, 
-          value: id, 
-          type: `button`, 
-          style: `danger`,
-          confirm: {
-            title: `Are you sure?`,
-            text: `Confirmation to delete tag?`,
-            ok_text: `Yes, delete it!`,
-            dismiss_text: `No, don't delete!`
-          } 
-        };
-        //does tag(user tag) exist in tags(tag table)
-        let button = (userTagArr.indexOf(id) !== -1) ? deleteButton : addButton;
-            
-        let attachment = {
-          text: `${name}`,
-          callback_id: `userTag`,
-          fallback: `This option is disabled`,
-          attachment_type: `default`,
-          color: `#3AA3E3`,
-          actions: [button]
-        };
-        attachments.push(attachment);
-      });
-
-      let response = {
-        text: `Here are a list of your tags: `,
-        fallback: `Unable to show tags`,
-        color: `#3AA3E3`,
-        attachments
-      };
-
-      bot.reply(message, response);
-    });
-  });
-};
 
 connection.hears("location", ['direct_message'], (bot, message) => {
   bot.reply(message, { 
@@ -186,19 +124,13 @@ connection.on('rtm_open', (bot) => {
 
 connection.on('rtm_close', (bot) => {
   console.log(`** The RTM api just closed at ${Date.now()}`);
-  //Need to determine if the retry or the bot.startRTM is reconnecting
-  // bot.startRTM((err, bot, payload) => {
-  //   if (err) {
-  //     throw new Error('Could not connect to Slack');
-  //   }
-  // });
 });
 
 connection.on('rtm_reconnect_failed', (bot) => {
   console.log(`** The RTM api retry attempts have been exhausted at ${Date.now()}`);
 });
 
-export { store, teams, addTeamBot, connection };
+export { store, teams, spawnBot, connection };
 
 
 

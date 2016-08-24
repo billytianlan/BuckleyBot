@@ -1,16 +1,17 @@
-import User from '../models/userModel';
-import Tag from '../models/tagModel';
-import Job from '../models/jobModel';
+import { store } from '../bots/main';
 import userJobsListener from '../bots/job';
-import { store } from '../bot';
 import { startConvo } from '../bots/introduction';
 import { CronJob } from 'cron';
 import Promise from 'bluebird';
-import Sequelize from 'sequelize';
+import rp from 'request-promise';
+import _ from 'underscore';
+import helper from '../bots/helper';
+ 
+const host = process.env.HOST || 'http://localhost:8080';  
 
 let jobCron = new CronJob({
   cronTime: '00 30 08 * * 1-5',
-  // cronTime: '50 * * * * *',
+  // cronTime: '20 * * * * *',
   onTick: () => {
     console.log('Cron jobs to dank jobs');
     messageUsers();
@@ -20,68 +21,70 @@ let jobCron = new CronJob({
 });
 
 let messageUsers = () => {
-  User.findAll({
-    include: [{
-      model: Tag,
-      include: [{
-        model: Job,
-        where: {
-          createdAt: {
-            $gt: new Date(new Date() - 24 * 60 * 60 * 1000)
-          }
-        }
-      }]
-    }]
+  rp({
+    url: `${host}/api/users/tags`,
+    method: 'GET',
+    json: true
   })
   .then(users => {
-    users.forEach(user => {
-      let count = {};
-      const tagArr = user.dataValues.tags.map(item => {
-        return item.name;
+    console.log('in the reminder', users);
+    return Promise.all(_.map(users, (user) => {
+      const tagArr = _.map(user.tags, (tag) => {
+       return tag.id;
       });
-      const id = user.dataValues.slackUserId;
-      const BUCKLEY = store[user.dataValues.slackTeamId];
-
-      user.dataValues.tags.forEach(tag => {
-        tag.jobs.forEach(job => {
-          if (count[job.id]) { 
-            count[job.id]++; 
-          } else { 
-            count[job.id] = 1; 
-          }
-        })
+      let qs = tagArr.join('+');
+      return rp({
+        url: `${host}/api/jobs/tags`,
+        method: 'GET',
+        qs: {
+          tags: qs
+        },
+        json: true
       })
-      const keySort = Object.keys(count).sort((a, b) => { return count[b] - count[a]}).slice(0, 6);
+      .then((jobs) => {
+        return {
+          user: user,
+          jobs: jobs
+        }
+      })
+    }))
+  })
+  .then((data) => {
+    _.each(data, (item) => {
+      const id = item.user.slackUserId;
+      const BUCKLEY = store[item.user.slackTeamId]; 
 
-      if (keySort.length === 0) {
+      let jobsArr = _.map(item.jobs, (job, key) => {
+        return {
+          title: `:computer: ${job.title}`,
+          text: `:office: ${job.company} - ${job.location} \n :link: ${job.link}`,
+          callback_id: `clickSaveJobs`,
+          attachment_type: `default`,
+          actions: [
+            {name: `saveJob`, text: `Save`, value: job.id, type: `button`, style: `default`}
+          ]
+        }
+      });
+
+      if (jobsArr.length === 0) {
         BUCKLEY.startPrivateConversation({ user: user.slackUserId }, (err, convo) =>{
           convo.say(`It seems like you don't have any tags! Please type tags and set you filters!`);
           return;
         });
-      } 
+      }
 
-      return Job.findAll({
-        where: { $or: [
-          { id: keySort }
-        ]}
-      })
-      .then(jobs => {
-        const message_with_jobs = {
-          text: 'Good morning! I found some cool jobs you might be interested in:',
-          attachments: userJobsListener.returnJobSample(jobs, 5)
-        };
-        BUCKLEY.startPrivateConversation({ user: user.slackUserId }, (err, convo) => {
-          convo.say(message_with_jobs);
-        });
-      })
-      .catch(err => {
-        console.log('There was an error:', err);
-      })
+      const message_with_jobs = {
+        text: 'Good morning! I found some cool jobs you might be interested in:',
+        attachments: sortedJobsArr
+      };
+      BUCKLEY.startPrivateConversation({ user: user.slackUserId }, (err, convo) => {
+        convo.say(message_with_jobs);
+      });
     })
   })
   .catch(err => {
     console.log('There was an error:', err);
   });
-};
+}
 
 export default jobCron;

@@ -43,7 +43,8 @@ const authTeam = (req, res) => {
     return rp(teamData);
   }) 
   .then((team) => {
-    findTeamUsers(team);
+    console.log('the team data', team);
+    findTeamUsers(res, team);
     res.redirect('/signin');
   })
   .catch((err) => {
@@ -54,7 +55,7 @@ const authTeam = (req, res) => {
 
 // Triggered from authTeam function
 // Queries Slack for Team Users and makes request to user controller to create users
-const findTeamUsers = (team) => {
+const findTeamUsers = (res, team) => {
   let teamUsersData = {
     uri: 'https://slack.com/api/users.list',
     method: 'GET',
@@ -75,10 +76,12 @@ const findTeamUsers = (team) => {
       console.log('----- Making Request to /api/users -----');
       return rp(usersData);
     } else {
+      console.log('Slack request unsuccessful', body);
       res.redirect('/oops');
     }
   }) 
   .catch((err) => {
+    console.log('error retrieving user list from slack', err);
     res.redirect('/oops');
   });
 }

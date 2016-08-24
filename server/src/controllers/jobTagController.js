@@ -1,6 +1,7 @@
 import Job from '../models/jobModel';
 import Tag from '../models/tagModel';
 import JobTag from '../models/jobTagModel';
+import _ from 'underscore';
 
 // Triggered from '/api/jobs/tags'
 const addJobTag = (req, res) => {
@@ -39,4 +40,37 @@ const addJobTag = (req, res) => {
   }
 }
 
-export default { addJobTag }
+const getJobTags = (req, res) => {
+  let tagIdArray = req.query.tags.split(' ');
+
+  JobTag.findAll({
+    where: { 
+      tagId: { $in: tagIdArray } 
+    }
+  })
+  .then((tags) => {
+    let groupByJob = _.countBy(tags, (jobTag) => {
+      return jobTag.dataValues.jobId
+    });
+
+    //map array of objects with jobId and count
+    groupByJob = _.map(groupByJob, (val, key) => {
+      return { 
+        jobId: key,
+        count: val
+      }
+    });
+    //send relevant jobs (top 5 jobs by count);
+    let relevantJobs = _.last(_.sortBy(groupByJob, 'count'), 5);
+    Promise.all(_.map(relevantJobs, (item) => {
+      return Job.findOne({
+        where: { id: item.jobId }
+      })
+    }))
+    .then((jobsArray) => {
+      res.send(jobsArray);
+    })
+  })
+}
+
+export default { addJobTag, getJobTags }

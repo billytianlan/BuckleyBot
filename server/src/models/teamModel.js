@@ -1,6 +1,6 @@
 import db from '../db/db-config';
 import Sequelize from 'sequelize';
-import { addTeamBot } from '../bot'
+import { spawnBot } from '../bots/main'
 
 //Generates Team model
 let Team = db.define('team', {
@@ -21,7 +21,7 @@ Team.hook('afterCreate', (team, options) => {
 
   //should call the method where we are only adding one team
   // console.log(team);
-  addTeamBot(team.get({ plain: true }));
+  spawnBot(team.get({ plain: true }));
 });
 
 export default Team;

@@ -27,7 +27,7 @@ const findTeam = (req, res) => {
 // Adds a team to the teams table
 const addTeam = (req, res) => {
   let slackTeamData = req.body.slackTeamData;
-
+  console.log('the slack team data in the controller', slackTeamData);
   Team.findOrCreate({
     where: {
       slackTeamToken: slackTeamData.slackTeamToken,

@@ -38,9 +38,12 @@ export default (app, express) => {
   //////////////////////////////////////////////
   app.get('/slack/users/data', requireAuth, userController.getUserData);
   app.get('/api/users/:slackUserId', userController.findUser);
+  app.get('/api/users/tags', userController.getAllUserTags);
   app.post('/api/users', userController.addUsers);
   app.post('/api/users/user', userController.addUser);
-  app.put('/api/users/location', userController.updateLocation);
+  app.put('/api/users', userController.updateUser);
+
+  app.get('/api/wtf', userController.getAllUserTags);
 
   //////////////////////////////////////////////
   //Handling Job
@@ -57,6 +60,7 @@ export default (app, express) => {
   //Handling JobTag
   //////////////////////////////////////////////
   app.post('/api/jobs/tags', jobTagController.addJobTag);
+  app.get('/api/jobs/tags', jobTagController.getJobTags);
 
   //////////////////////////////////////////////
   //Handling Interactive Buttons

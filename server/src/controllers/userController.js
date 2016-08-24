@@ -1,5 +1,6 @@
 import User from '../models/userModel';
 import Job from '../models/jobModel';
+import Tag from '../models/tagModel';
 
 // Triggered from 'GET /slack/users/data' after passport middleware finds user
 const getUserData = (req, res) => {
@@ -99,18 +100,86 @@ const addUser = (req, res) => {
 
 // Triggered from 'PUT /api/users/location' 
 // Updates location when an user interacts with the bot
-const updateLocation = (req, res) => {
+const updateUser = (req, res) => {
   let slackUserId = req.body.slackUserId;
   let location = req.body.location;
 
-  User.findOne({
-    where: { slackUserId }
-  })
+  User.update(
+    { location: location },
+    { where: {slackUserId: slackUserId } }
+  )
   .then(user => {
-    user.updateAttributes({ location });
     res.send('User location updated')
   })
   .catch(err => res.send('Error when updating location', err))
 }
 
-export default { getUserData, findUser, addUsers, addUser, updateLocation };
+const getAllUserTags = (req, res) => {
+  console.log('in the usertag');
+  User.findAll({
+    include: [Tag]
+  })
+  .then(users => {
+    res.send(users);
+  })
+  .catch(err => {
+    console.log(err);
+    res.send(err);
+  })
+}
+// const getAllUserData = (req, res) => {
+//   //Return all the data for every user 
+//   //Include the users tags and the jobs 
+//   //assoicated with the tags within the last 24 hours
+//   User.findAll({
+//     include: [{
+//       model: Tag,
+//       include: [{
+//         model: Job,
+//         where: {
+//           createdAt: {
+//             $gt: new Date(new Date() - 24 * 60 * 60 * 1000)
+//           }
+//         }
+//       }]
+//     }]
+//   })
+//   .then(users => {
+//     res.send(users);
+//   })
+//   .catch(err => {
+//     console.log('error retrieving getAllUserData', err)
+//     res.send(err);
+//   })
+// }
+
+// const getUserTagJobs = (req, res) => {
+//   let slackUserId = req.params.slackUserId
+//   User.findOne({
+//     where: { slackUserId: slackUserId },
+//     include: [{
+//       model: Tag,
+//       include: [{
+//         model: Job,
+//         where: {
+//           createdAt: {
+//             $gt: new Date(new Date() - 24 * 60 * 60 * 1000)
+//           }
+//         }
+//       }]
+//     }]
+//   })
+//   .then(user => {
+//     if (user) {
+//       res.send(user);
+//     } else {
+//       res.status(404).send('Could not find user for given slackUserId');
+//     }
+//   })
+//   .catch(err => {
+//     console.log('error retrieving getUserTagJobs', err)
+//     res.send(err);
+//   })
+// }
+
+export default { getUserData, findUser, addUsers, addUser, updateUser, getAllUserTags };

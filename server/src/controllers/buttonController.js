@@ -1,8 +1,8 @@
 import UserJob from '../models/userJobModel';
 import User from '../models/userModel';
 import Job from '../models/jobModel';
+import { connection, store } from '../bots/main';
 import botHelper from '../bots/helper';
-import { connection, store } from '../bot';
 import rp from 'request-promise';
 
 //master dispatcher to check the callback_id of incoming requests
